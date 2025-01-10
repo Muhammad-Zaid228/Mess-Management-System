@@ -1,411 +1,309 @@
-/*
-Login Details:
-ID: MMS
-Password: 123
-*/
-#include<fstream>
-#include<iostream>
-#include<string>
-#include<iomanip>
-#define A 2000
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <limits>
 using namespace std;
-class attend{
-	public:
-	string adate;
-	string lunch;
-	string dinner;
-	string both;
-	attend *link;
-};
 
-class node {
-	public:
-	string name ;
-	string phoneno;
-	string date;
-	int t;
-	int amount;
-	int pamount;
-	int lcount=0;
-	int dcount=0;
-	node *next;
-	attend *a=NULL;
+const int BASE_COST = 2000;
 
-};
-class mess{
-	node *head;
-	attend *ahead;
+class Node {
 public:
-	mess();
-    void save();
-	void insert();
-	void display();
-	void del();
-	void dspattend(node *);
-	void dsp(node *m);
-	void getamount(node *temp);
-
-
+    string name;
+    string phone;
+    string joinDate;
+    int type = 0; // 1: Lunch, 2: Dinner, 3: Both
+    int amountPaid = 0;
+    Node *next = nullptr;
 };
-mess::mess(){
 
-	head=NULL;
-	ahead=NULL;
+class Mess {
+    Node *head = nullptr;
 
+public:
+    Mess() = default;
+    ~Mess();
 
+    void insertCustomer();
+    void displayCustomers();
+    void deleteCustomer();
+    void saveToFile();
+    void displayCustomerDetails(Node *customer);
+    void showMenuAndDeductAmount();
 
-}
-void mess::insert(){
-	int a=0,b=0;
-	node *temp;
-	temp=new node;
-	cout<<endl;
-	cout<<"                            Enter Customer Details \n"<<endl;
-	cout<<"Enter name of Customer->";
-	cin.ignore();
-	getline(cin,temp->name);
-	//cin>>temp->name;
-	cout<<"Enter phone number->";
-	cin>>temp->phoneno;
+private:
+    Node* findCustomerByName(const string &name);
+};
 
-	do
-	{
-		if(a>0)
-		{
-			cout<<"Please re-enter your choice \n";
-		}
-	cout<<"Enter the timing (1.lunch 2.dinner 3.both)";
-	cin>>temp->t;
-	a++;
-	}while(temp->t>3);
-
-	cout<<"Enter Date of joining mess->";
-	cin>>temp->date;
-
-
-	do
-	{
-		if(b>0)
-		{
-			cout<<"Please pay the minimum amount"<<endl;
-		}
-		getamount(temp);
-		b++;
-	}while(temp->amount<500);
-
-	temp->next=NULL;
-	if(head==NULL){
-		head=temp;
-	}
-	else{
-		node *p;
-		p=head;
-
-		while(p->next!=NULL){
-			p=p->next;
-		}
-		p->next=temp;
-	}
-}
-void mess :: getamount(node *temp)
-{
-
-	cout<<"Enter Amount paid->";
-		cin>>temp->amount;
-
-}
-
-void mess::save()
-{
-
-    ofstream data;
-    data.open("Report.txt",ios::app);
-    node* temp=head;
-   
-	
-    data<<"                 Customer Details \n"<<endl;
-    data<<"______________________________________________________________________________________________________________"<<endl;
-    data<<left<<setw(15)<<"Customer name";
-    data<<right<<setw(15)<<"Phone no";
-    data<<right<<setw(15)<<"Date";
-    data<<right<<setw(15)<<"Amount";
-    data<<right<<setw(15)<<"Total lunch";
-    data<<right<<setw(15)<<"Total dinner";
-    data<<right<<setw(15)<<"Pending amount"<<endl;
-    data<<"_______________________________________________________________________________________________________________"<<endl;
-	
-	
-	
-    while(temp!=NULL){
-        data<<left<<setw(15)<<temp->name;
-        data<<right<<setw(15)<<temp->phoneno;
-        data<<right<<setw(15)<<temp->date;
-        data<<right<<setw(15)<<temp->amount;
-        data<<right<<setw(15)<<temp->lcount;
-        data<<right<<setw(15)<<temp->dcount;
-        switch(temp->t)
-        {
-        	case 1:
-        		data<<right<<setw(15)<<((A/2)-temp->amount)<<endl;
-        		break;
-        	case 2:
-				data<<right<<setw(15)<<((A/2)-temp->amount)<<endl;
-				break;
-			case 3:
-			    data<<right<<setw(15)<<((A)-temp->amount)<<endl;	
-        		break;
-		}
-        
-        temp=temp->next;
+Mess::~Mess() {
+    while (head) {
+        Node *temp = head;
+        head = head->next;
+        delete temp;
     }
 }
 
+void Mess::insertCustomer() {
+    Node *newCustomer = new Node;
 
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cout << "Enter Customer Name: ";
+    getline(cin, newCustomer->name);
 
+    cout << "Enter Phone Number: ";
+    cin >> newCustomer->phone;
 
-void mess::display(){
-	node *p;
-	char N;
-	string mname;
-	if(head==NULL)
-	{
-			cout<<"Customer list is Empty "<<endl;
-			return;
-	}
+    do {
+        cout << "Enter Meal Type (1: Lunch, 2: Dinner, 3: Both): ";
+        cin >> newCustomer->type;
+    } while (newCustomer->type < 1 || newCustomer->type > 3);
 
-	else{
+    cout << "Enter Joining Date (DD/MM/YYYY): ";
+    cin >> newCustomer->joinDate;
 
-		cout<<"1:To display All customers details "<<endl;
-		cout<<"2:To Display Particular customer Details "<<endl;
-		cin>>N;
-		switch(N){
-			case '1':
-			{
-				p=head;
-				cout<<endl;
-				cout<<"                       Customer Details \n"<<endl;
-				cout<<"______________________________________________________________________________"<<endl;
-				cout<<left<<setw(15)<<"Customer name";
-				cout<<right<<setw(15)<<"Phone no";
-				cout<<right<<setw(15)<<"Joining Date";
-				cout<<right<<setw(15)<<"Amount"<<endl;
-				cout<<"______________________________________________________________________________"<<endl;
+    do {
+        cout << "Enter Amount Paid (Minimum 500): ";
+        cin >> newCustomer->amountPaid;
+    } while (newCustomer->amountPaid < 500);
 
-				while (p!=NULL)
-				{
+    if (!head) {
+        head = newCustomer;
+    } else {
+        Node *temp = head;
+        while (temp->next) {
+            temp = temp->next;
+        }
+        temp->next = newCustomer;
+    }
 
-				dsp(p);
-				//data << p->name << "  " << p->amount;
-				cout<<endl<<"------------------------------------------------------------------------------"<<endl;
-				p=p->next;
-
-				}
-				break;
-			}
-			case '2':
-				{
-				cout<<"Enter name to find Details ->";
-				cin>>mname;
-				p=head;
-				while(p!=NULL)
-				{
-					if(p->name==mname)
-					{
-						cout<<endl;
-						cout<<"                 Customer Details \n"<<endl;
-						cout<<"______________________________________________________________________________"<<endl;
-						cout<<left<<setw(15)<<"Customer name";
-						cout<<right<<setw(15)<<"Phone no";
-						cout<<right<<setw(15)<<"Date";
-						cout<<right<<setw(15)<<"Amount"<<endl;
-						cout<<"______________________________________________________________________________"<<endl;
-
-						dsp(p);
-						break;
-					}
-					p=p->next;
-				}
-				if(p==NULL)
-				cout<<"Customer not found "<<endl;
-				break;
-				}
-	}}
-}
-void mess::dsp(node *m){
-	//cout<<endl;
-	cout<<left<<setw(15)<<m->name;
-	cout<<right<<setw(15)<<m->phoneno;
-	cout<<right<<setw(15)<<m->date;
-	cout<<right<<setw(15)<<m->amount+m->pamount;
-	cout<<endl<<endl;
-	//data << m->name << "  " << m->phoneno;
-	//cout<<"______________________________________________________________________________"<<endl;
-	cout<<left<<setw(15)<<"Date  ";
-	switch(m->t)
-	{
-		case 1:
-			cout<<right<<setw(15)<<"Lunch "<<endl;
-			break;
-		case 2:
-			cout<<right<<setw(15)<<"Dinner "<<endl;
-			break;
-		case 3:
-		cout<<right<<setw(15)<<"Lunch";
-		cout<<right<<setw(15)<<"Dinner "<<endl;
-		break;
-		default :
-			cout<<"Entered wrong choice"<<endl;
-			break;
-
-
-
-	}
-
-
-	//cout<<"______________________________________________________________________________"<<endl;
-	dspattend(m);
-
+    cout << "Customer added successfully!\n";
 }
 
-void mess::dspattend(node *m)
-{
-	node *p;
-
-	p=m;
-	if(p->a==NULL){
-		return;
-	}
-	attend *s;
-	s=p->a;
-	cout<<endl;
-	while(s!=NULL){
-		cout<<left<<setw(15)<<s->adate;
-		switch(p->t)
-		{
-		case 1:
-		cout<<right<<setw(15)<<s->lunch<<endl;
-		break;
-
-		case 2:
-	 	cout<<right<<setw(15)<<s->dinner<<endl;
-
-	break;
-	case 3:
-		cout<<right<<setw(15)<<s->lunch;
-		cout<<right<<setw(15)<<s->dinner<<endl;
-		break;
-	}
-
-	s=s->link;}
-
+Node* Mess::findCustomerByName(const string &name) {
+    Node *temp = head;
+    while (temp) {
+        if (temp->name == name) {
+            return temp;
+        }
+        temp = temp->next;
+    }
+    return nullptr;
 }
 
-void mess::del(){
-	string name;
-	node *p,*d,*s;
-	p=head;
-	if (head==NULL)
-	{
-			cout<<"Customer List is Empty"<<endl;
-			return;
-	}
+void Mess::displayCustomerDetails(Node *customer) {
+    cout << "Name: " << customer->name << "\n";
+    cout << "Phone: " << customer->phone << "\n";
+    cout << "Joining Date: " << customer->joinDate << "\n";
+    cout << "Amount Paid: " << customer->amountPaid << "\n";
 
-	cout<<"Enter Name to delete customer info->";
-	cin>>name;
-
-	s=p;
-	while(p!=NULL)
-	{
-		if(p->name==name)
-		{
-			if(p==head)
-			{
-				head=NULL;
-				d=p;
-				delete p;
-				cout<<"Successfully Deleted Info of Customer "<<name<<endl;
-				
-				return;
-
-			}
-			s->next=p->next;
-			d=p;
-			delete d;
-			cout<<"Successfully Deleted Info of Customer "<<name<<endl;
-			return;
-		}
-		s=p;
-		p=p->next;
-	}
-	if(p==NULL)
-	cout<<"Customer Not found \n";
-
+    cout << "Meal Type: ";
+    if (customer->type == 1) cout << "Lunch\n";
+    else if (customer->type == 2) cout << "Dinner\n";
+    else cout << "Both\n";
 }
 
+void Mess::displayCustomers() {
+    if (!head) {
+        cout << "No customers to display.\n";
+        return;
+    }
 
-int main (){
-	mess mk;
-	char N;
-    string aid,apassword;
-	string id,password;
-	int count=1;
-	
-	id="MMS";
-	password="123";
-	cout<<"                                          * MESS MANAGEMENT SYSTEM *     \n\n ";
-		
-	cout<<"Enter the login ID : ";
-	cin>>aid;
-	cout<<"Enter the password : ";
-	cin>>apassword;
-	if(aid==id && apassword==password)
-		{
-	while(count==1)
-	{
-		cout<<endl<<endl;
-		cout<<"Enter your choice :\n";
-		cout<<"1:To Add new Customer\n"<<"2:To display customer info"<<endl<<"3:To delete customer\n";
-		cout<<"4:To stop\n";
-		cin>>N;
-		switch(N){
-			case '1':
-				{
-					mk.insert();
-					break;
-				}
-			case '2':
-				{
-					mk.display();
-					break;
-				}
-			case '3':
-				{
-					mk.del();
-					break;
-				}
-			case '4':
-				{
-					count++;
-					break;
-				}
-			default:
-			{
-				cout<<"You entered wrong choice "<<endl;
-				break;
+    cout << "1. Display All Customers\n";
+    cout << "2. Display Specific Customer\n";
 
-			}
-		}
-	}
-	}
-	else 
-  	{
-		if(aid!=id)
-		{
-			cout<<"Invalid login credentials ";	
-		
-		}
-			
-	}	
-	mk.save();
-	return 0;
+    int choice;
+    cin >> choice;
+    if (choice == 1) {
+        Node *temp = head;
+        while (temp) {
+            displayCustomerDetails(temp);
+            cout << "------------------------\n";
+            temp = temp->next;
+        }
+    } else if (choice == 2) {
+        cout << "Enter Customer Name: ";
+        string name;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        getline(cin, name);
+
+        Node *customer = findCustomerByName(name);
+        if (customer) {
+            displayCustomerDetails(customer);
+        } else {
+            cout << "Customer not found.\n";
+        }
+    } else {
+        cout << "Invalid choice.\n";
+    }
+}
+
+void Mess::deleteCustomer() {
+    cout << "Enter Customer Name to Delete: ";
+    string name;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    getline(cin, name);
+
+    Node *temp = head, *prev = nullptr;
+    while (temp) {
+        if (temp->name == name) {
+            if (prev) {
+                prev->next = temp->next;
+            } else {
+                head = temp->next;
+            }
+            delete temp;
+            cout << "Customer deleted successfully.\n";
+            return;
+        }
+        prev = temp;
+        temp = temp->next;
+    }
+
+    cout << "Customer not found.\n";
+}
+
+void Mess::saveToFile() {
+    ofstream file("Report.txt");
+    if (!file) {
+        cout << "Failed to open file for writing.\n";
+        return;
+    }
+
+    Node *temp = head;
+    while (temp) {
+        file << "Name: " << temp->name << "\n";
+        file << "Phone: " << temp->phone << "\n";
+        file << "Joining Date: " << temp->joinDate << "\n";
+        file << "Amount Paid: " << temp->amountPaid << "\n";
+        file << "Meal Type: ";
+        if (temp->type == 1) file << "Lunch\n";
+        else if (temp->type == 2) file << "Dinner\n";
+        else file << "Both\n";
+        file << "------------------------\n";
+        temp = temp->next;
+    }
+
+    cout << "Customer data saved to Report.txt\n";
+}
+
+void Mess::showMenuAndDeductAmount() {
+    cout << "Enter Customer Name: ";
+    string name;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    getline(cin, name);
+
+    Node *customer = findCustomerByName(name);
+    if (!customer) {
+        cout << "Customer not found.\n";
+        return;
+    }
+
+    const int MENU_SIZE = 3;
+    vector<string> menuItems = {"Chicken Biryani", "Paneer Butter Masala", "Gulab Jamun"};
+    vector<int> menuPrices = {150, 120, 50};
+
+    cout << "Menu:\n";
+    for (int i = 0; i < MENU_SIZE; ++i) {
+        cout << i + 1 << ". " << menuItems[i] << " - Rs." << menuPrices[i] << "\n";
+    }
+
+    cout << "Enter the item number to order: ";
+    int itemNumber;
+    cin >> itemNumber;
+
+    if (itemNumber < 1 || itemNumber > MENU_SIZE) {
+        cout << "Invalid item number.\n";
+        return;
+    }
+
+    int price = menuPrices[itemNumber - 1];
+
+    if (customer->amountPaid < price) {
+        cout << "Insufficient balance. Please add more funds.\n";
+    } else {
+        customer->amountPaid -= price;
+        cout << "Order successful! Rs." << price << " deducted. Remaining balance: Rs." << customer->amountPaid << "\n";
+    }
+}
+
+void signUp() {
+    string username, password;
+    cout << "Enter username: ";
+    cin >> username;
+    cout << "Enter password: ";
+    cin >> password;
+
+    ofstream userFile("users.txt", ios::app);
+    userFile << username << " " << password << "\n";
+    userFile.close();
+    cout << "User registered successfully!\n";
+}
+
+bool login() {
+    string username, password, fileUsername, filePassword;
+    cout << "Enter username: ";
+    cin >> username;
+    cout << "Enter password: ";
+    cin >> password;
+
+    ifstream userFile("users.txt");
+    while (userFile >> fileUsername >> filePassword) {
+        if (fileUsername == username && filePassword == password) {
+            userFile.close();
+            return true; // Login successful
+        }
+    }
+    userFile.close();
+    cout << "Invalid credentials!\n";
+    return false; // Login failed
+}
+
+int main() {
+    Mess mess;
+    char choice;
+
+    cout << "Mess Management System\n";
+    cout << "1. Sign Up\n2. Login\n";
+    cin >> choice;
+
+    if (choice == '1') {
+        signUp();
+    } else if (choice == '2') {
+        if (!login()) {
+            return 0; // Exit if login fails
+        }
+    } else {
+        cout << "Invalid choice!\n";
+        return 0;
+    }
+
+    while (true) {
+        cout << "\nMess Management System\n";
+        cout << "1. Add New Customer\n";
+        cout << "2. Display Customer Info\n";
+        cout << "3. Delete Customer\n";
+        cout << "4. Show Menu and Deduct Amount\n";
+        cout << "5. Save and Exit\n";
+        cin >> choice;
+        switch (choice) {
+            case '1':
+                mess.insertCustomer();
+                break;
+            case '2':
+                mess.displayCustomers();
+                break;
+            case '3':
+                mess.deleteCustomer();
+                break;
+            case '4':
+                mess.showMenuAndDeductAmount();
+                break;
+            case '5':
+                mess.saveToFile();
+                return 0;
+            default:
+                cout << "Invalid choice!\n";
+                break;
+        }
+    }
+    return 0;
 }
