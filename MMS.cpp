@@ -24,7 +24,7 @@ class Mess {
     Node* head = nullptr;
 
 public:
-    Mess() = default;
+    Mess() { loadFromFile(); }
     ~Mess();
 
     void insertCustomer();
@@ -32,13 +32,16 @@ public:
     void displayCustomerDetails();
     void deleteCustomer();
     void saveToFile();
+    void loadFromFile(); // New function to load data from a file
     void showMenuAndDeductAmount();
 
 private:
     Node* findCustomerByName(const string& name);
+    string hashPhoneNumber(const string& phone); // New hashing function
 };
 
 Mess::~Mess() {
+    saveToFile();
     while (head) {
         Node* temp = head;
         head = head->next;
@@ -100,6 +103,11 @@ Node* Mess::findCustomerByName(const string& name) {
     return nullptr;
 }
 
+// Hashing function to replace phone number with 'xxxxxxxxxxx'
+string Mess::hashPhoneNumber(const string& phone) {
+    return "xxxxxxxxxxx";
+}
+
 void Mess::displayCustomers() {
     if (!head) {
         wxMessageBox("No customers to display.", "Information", wxOK | wxICON_INFORMATION);
@@ -110,7 +118,7 @@ void Mess::displayCustomers() {
     Node* temp = head;
     while (temp) {
         message += wxString::Format("Name: %s\nPhone: %s\nJoining Date: %s\nAmount Paid: %d\nMeal Type: %s\n------------------------\n",
-            temp->name, temp->phone, temp->joinDate, temp->amountPaid,
+            temp->name, hashPhoneNumber(temp->phone), temp->joinDate, temp->amountPaid,
             temp->type == 1 ? "Lunch" : (temp->type == 2 ? "Dinner" : "Both"));
         temp = temp->next;
     }
@@ -131,7 +139,7 @@ void Mess::displayCustomerDetails() {
     }
 
     wxString message = wxString::Format("Name: %s\nPhone: %s\nJoining Date: %s\nAmount Paid: %d\nMeal Type: %s\n",
-        customer->name, customer->phone, customer->joinDate, customer->amountPaid,
+        customer->name, hashPhoneNumber(customer->phone), customer->joinDate, customer->amountPaid,
         customer->type == 1 ? "Lunch" : (customer->type == 2 ? "Dinner" : "Both"));
 
     wxMessageBox(message, "Customer Details", wxOK | wxICON_INFORMATION);
@@ -164,7 +172,7 @@ void Mess::deleteCustomer() {
 }
 
 void Mess::saveToFile() {
-    ofstream file("Report.txt");
+    ofstream file("customers.txt");
     if (!file) {
         wxMessageBox("Failed to open file for writing.", "Error", wxOK | wxICON_ERROR);
         return;
@@ -172,16 +180,49 @@ void Mess::saveToFile() {
 
     Node* temp = head;
     while (temp) {
-        file << "Name: " << temp->name << "\n";
-        file << "Phone: " << temp->phone << "\n";
-        file << "Joining Date: " << temp->joinDate << "\n";
-        file << "Amount Paid: " << temp->amountPaid << "\n";
-        file << "Meal Type: " << (temp->type == 1 ? "Lunch" : (temp->type == 2 ? "Dinner" : "Both")) << "\n";
-        file << "------------------------\n";
+        file << temp->name << "," << temp->phone << "," << temp->joinDate << "," << temp->type << "," << temp->amountPaid << "\n";
         temp = temp->next;
     }
+}
 
-    wxMessageBox("Customer data saved to Report.txt", "Success", wxOK | wxICON_INFORMATION);
+void Mess::loadFromFile() {
+    ifstream file("customers.txt");
+    if (!file) return;
+
+    string line;
+    while (getline(file, line)) {
+        Node* newCustomer = new Node;
+        size_t pos = 0;
+
+        pos = line.find(",");
+        newCustomer->name = line.substr(0, pos);
+        line.erase(0, pos + 1);
+
+        pos = line.find(",");
+        newCustomer->phone = line.substr(0, pos);
+        line.erase(0, pos + 1);
+
+        pos = line.find(",");
+        newCustomer->joinDate = line.substr(0, pos);
+        line.erase(0, pos + 1);
+
+        pos = line.find(",");
+        newCustomer->type = stoi(line.substr(0, pos));
+        line.erase(0, pos + 1);
+
+        newCustomer->amountPaid = stoi(line);
+
+        if (!head) {
+            head = newCustomer;
+        }
+        else {
+            Node* temp = head;
+            while (temp->next) {
+                temp = temp->next;
+            }
+            temp->next = newCustomer;
+        }
+    }
 }
 
 void Mess::showMenuAndDeductAmount() {
@@ -271,30 +312,19 @@ MainFrame::MainFrame()
     menuBar->Append(menu, "Options");
     SetMenuBar(menuBar);
 
-    // Add a panel to hold the welcome message
     wxPanel* panel = new wxPanel(this, wxID_ANY);
-
-    // Create a static text widget for the welcome message
-    wxStaticText* welcomeText = new wxStaticText(panel, wxID_ANY,
-        "Welcome to MMS",
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxALIGN_CENTER_HORIZONTAL | wxST_NO_AUTORESIZE);
-
-    // Set font size and style for the message
+    wxStaticText* welcomeText = new wxStaticText(panel, wxID_ANY, "Welcome to MMS", wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER_HORIZONTAL | wxST_NO_AUTORESIZE);
     wxFont font = welcomeText->GetFont();
-    font.SetPointSize(14); // Set font size
-    font.SetWeight(wxFONTWEIGHT_BOLD); // Make it bold
+    font.SetPointSize(14);
+    font.SetWeight(wxFONTWEIGHT_BOLD);
     welcomeText->SetFont(font);
 
-    // Center the message within the panel using a BoxSizer
     wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
-    panelSizer->AddStretchSpacer(); // Add space above
+    panelSizer->AddStretchSpacer();
     panelSizer->Add(welcomeText, 0, wxALIGN_CENTER_HORIZONTAL);
-    panelSizer->AddStretchSpacer(); // Add space below
+    panelSizer->AddStretchSpacer();
     panel->SetSizer(panelSizer);
 
-    // Bind events to the menu options
     Bind(wxEVT_MENU, &MainFrame::OnAddCustomer, this, ID_ADD_CUSTOMER);
     Bind(wxEVT_MENU, &MainFrame::OnDisplayCustomers, this, ID_DISPLAY_CUSTOMERS);
     Bind(wxEVT_MENU, &MainFrame::OnDisplayCustomerDetails, this, ID_DISPLAY_CUSTOMER_DETAILS);
