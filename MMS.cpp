@@ -1,7 +1,11 @@
+#include <wx/wx.h>
+#include <wx/textdlg.h>
+#include <wx/numdlg.h>
 #include <fstream>
-#include <iostream>
 #include <vector>
 #include <limits>
+#include <string>
+
 using namespace std;
 
 const int BASE_COST = 2000;
@@ -13,11 +17,11 @@ public:
     string joinDate;
     int type = 0; // 1: Lunch, 2: Dinner, 3: Both
     int amountPaid = 0;
-    Node *next = nullptr;
+    Node* next = nullptr;
 };
 
 class Mess {
-    Node *head = nullptr;
+    Node* head = nullptr;
 
 public:
     Mess() = default;
@@ -25,61 +29,68 @@ public:
 
     void insertCustomer();
     void displayCustomers();
+    void displayCustomerDetails();
     void deleteCustomer();
     void saveToFile();
-    void displayCustomerDetails(Node *customer);
     void showMenuAndDeductAmount();
 
 private:
-    Node* findCustomerByName(const string &name);
+    Node* findCustomerByName(const string& name);
 };
 
 Mess::~Mess() {
     while (head) {
-        Node *temp = head;
+        Node* temp = head;
         head = head->next;
         delete temp;
     }
 }
 
 void Mess::insertCustomer() {
-    Node *newCustomer = new Node;
+    Node* newCustomer = new Node;
 
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    cout << "Enter Customer Name: ";
-    getline(cin, newCustomer->name);
+    // Customer Name
+    wxTextEntryDialog nameDialog(nullptr, "Enter Customer Name:", "Add Customer");
+    if (nameDialog.ShowModal() != wxID_OK) return; // Allow cancellation
+    newCustomer->name = nameDialog.GetValue().ToStdString();
 
-    cout << "Enter Phone Number: ";
-    cin >> newCustomer->phone;
+    // Phone Number
+    wxTextEntryDialog phoneDialog(nullptr, "Enter Phone Number:", "Add Customer");
+    if (phoneDialog.ShowModal() != wxID_OK) return; // Allow cancellation
+    newCustomer->phone = phoneDialog.GetValue().ToStdString();
 
-    do {
-        cout << "Enter Meal Type (1: Lunch, 2: Dinner, 3: Both): ";
-        cin >> newCustomer->type;
-    } while (newCustomer->type < 1 || newCustomer->type > 3);
+    // Meal Type
+    wxNumberEntryDialog typeDialog(nullptr, "Enter Meal Type (1: Lunch, 2: Dinner, 3: Both):", "Meal Type", "Add Customer", 1, 1, 3);
+    if (typeDialog.ShowModal() != wxID_OK) return; // Allow cancellation
+    newCustomer->type = typeDialog.GetValue();
 
-    cout << "Enter Joining Date (DD/MM/YYYY): ";
-    cin >> newCustomer->joinDate;
+    // Joining Date
+    wxTextEntryDialog dateDialog(nullptr, "Enter Joining Date (DD/MM/YYYY):", "Add Customer");
+    if (dateDialog.ShowModal() != wxID_OK) return; // Allow cancellation
+    newCustomer->joinDate = dateDialog.GetValue().ToStdString();
 
-    do {
-        cout << "Enter Amount Paid (Minimum 500): ";
-        cin >> newCustomer->amountPaid;
-    } while (newCustomer->amountPaid < 500);
+    // Amount Paid
+    wxNumberEntryDialog amountDialog(nullptr, "Enter Amount Paid (Minimum 500):", "Amount Paid", "Add Customer", 500, 500, 100000);
+    if (amountDialog.ShowModal() != wxID_OK) return; // Allow cancellation
+    newCustomer->amountPaid = amountDialog.GetValue();
 
+    // Insert into linked list
     if (!head) {
         head = newCustomer;
-    } else {
-        Node *temp = head;
+    }
+    else {
+        Node* temp = head;
         while (temp->next) {
             temp = temp->next;
         }
         temp->next = newCustomer;
     }
 
-    cout << "Customer added successfully!\n";
+    wxMessageBox("Customer added successfully!", "Success", wxOK | wxICON_INFORMATION);
 }
 
-Node* Mess::findCustomerByName(const string &name) {
-    Node *temp = head;
+Node* Mess::findCustomerByName(const string& name) {
+    Node* temp = head;
     while (temp) {
         if (temp->name == name) {
             return temp;
@@ -89,221 +100,231 @@ Node* Mess::findCustomerByName(const string &name) {
     return nullptr;
 }
 
-void Mess::displayCustomerDetails(Node *customer) {
-    cout << "Name: " << customer->name << "\n";
-    cout << "Phone: " << customer->phone << "\n";
-    cout << "Joining Date: " << customer->joinDate << "\n";
-    cout << "Amount Paid: " << customer->amountPaid << "\n";
-
-    cout << "Meal Type: ";
-    if (customer->type == 1) cout << "Lunch\n";
-    else if (customer->type == 2) cout << "Dinner\n";
-    else cout << "Both\n";
-}
-
 void Mess::displayCustomers() {
     if (!head) {
-        cout << "No customers to display.\n";
+        wxMessageBox("No customers to display.", "Information", wxOK | wxICON_INFORMATION);
         return;
     }
 
-    cout << "1. Display All Customers\n";
-    cout << "2. Display Specific Customer\n";
-
-    int choice;
-    cin >> choice;
-    if (choice == 1) {
-        Node *temp = head;
-        while (temp) {
-            displayCustomerDetails(temp);
-            cout << "------------------------\n";
-            temp = temp->next;
-        }
-    } else if (choice == 2) {
-        cout << "Enter Customer Name: ";
-        string name;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        getline(cin, name);
-
-        Node *customer = findCustomerByName(name);
-        if (customer) {
-            displayCustomerDetails(customer);
-        } else {
-            cout << "Customer not found.\n";
-        }
-    } else {
-        cout << "Invalid choice.\n";
+    wxString message;
+    Node* temp = head;
+    while (temp) {
+        message += wxString::Format("Name: %s\nPhone: %s\nJoining Date: %s\nAmount Paid: %d\nMeal Type: %s\n------------------------\n",
+            temp->name, temp->phone, temp->joinDate, temp->amountPaid,
+            temp->type == 1 ? "Lunch" : (temp->type == 2 ? "Dinner" : "Both"));
+        temp = temp->next;
     }
+
+    wxMessageBox(message, "Customer List", wxOK | wxICON_INFORMATION);
+}
+
+void Mess::displayCustomerDetails() {
+    wxTextEntryDialog nameDialog(nullptr, "Enter Customer Name to View Details:", "Customer Details");
+    if (nameDialog.ShowModal() != wxID_OK) return;
+
+    string name = nameDialog.GetValue().ToStdString();
+    Node* customer = findCustomerByName(name);
+
+    if (!customer) {
+        wxMessageBox("Customer not found.", "Error", wxOK | wxICON_ERROR);
+        return;
+    }
+
+    wxString message = wxString::Format("Name: %s\nPhone: %s\nJoining Date: %s\nAmount Paid: %d\nMeal Type: %s\n",
+        customer->name, customer->phone, customer->joinDate, customer->amountPaid,
+        customer->type == 1 ? "Lunch" : (customer->type == 2 ? "Dinner" : "Both"));
+
+    wxMessageBox(message, "Customer Details", wxOK | wxICON_INFORMATION);
 }
 
 void Mess::deleteCustomer() {
-    cout << "Enter Customer Name to Delete: ";
-    string name;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    getline(cin, name);
+    wxTextEntryDialog nameDialog(nullptr, "Enter Customer Name to Delete:", "Delete Customer");
+    if (nameDialog.ShowModal() != wxID_OK) return;
 
-    Node *temp = head, *prev = nullptr;
+    string name = nameDialog.GetValue().ToStdString();
+    Node* temp = head, * prev = nullptr;
+
     while (temp) {
         if (temp->name == name) {
             if (prev) {
                 prev->next = temp->next;
-            } else {
+            }
+            else {
                 head = temp->next;
             }
             delete temp;
-            cout << "Customer deleted successfully.\n";
+            wxMessageBox("Customer deleted successfully!", "Success", wxOK | wxICON_INFORMATION);
             return;
         }
         prev = temp;
         temp = temp->next;
     }
 
-    cout << "Customer not found.\n";
+    wxMessageBox("Customer not found.", "Error", wxOK | wxICON_ERROR);
 }
 
 void Mess::saveToFile() {
     ofstream file("Report.txt");
     if (!file) {
-        cout << "Failed to open file for writing.\n";
+        wxMessageBox("Failed to open file for writing.", "Error", wxOK | wxICON_ERROR);
         return;
     }
 
-    Node *temp = head;
+    Node* temp = head;
     while (temp) {
         file << "Name: " << temp->name << "\n";
         file << "Phone: " << temp->phone << "\n";
         file << "Joining Date: " << temp->joinDate << "\n";
         file << "Amount Paid: " << temp->amountPaid << "\n";
-        file << "Meal Type: ";
-        if (temp->type == 1) file << "Lunch\n";
-        else if (temp->type == 2) file << "Dinner\n";
-        else file << "Both\n";
+        file << "Meal Type: " << (temp->type == 1 ? "Lunch" : (temp->type == 2 ? "Dinner" : "Both")) << "\n";
         file << "------------------------\n";
         temp = temp->next;
     }
 
-    cout << "Customer data saved to Report.txt\n";
+    wxMessageBox("Customer data saved to Report.txt", "Success", wxOK | wxICON_INFORMATION);
 }
 
 void Mess::showMenuAndDeductAmount() {
-    cout << "Enter Customer Name: ";
-    string name;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    getline(cin, name);
+    wxTextEntryDialog nameDialog(nullptr, "Enter Customer Name:", "Order Menu");
+    if (nameDialog.ShowModal() != wxID_OK) return;
+    string name = nameDialog.GetValue().ToStdString();
 
-    Node *customer = findCustomerByName(name);
+    Node* customer = findCustomerByName(name);
     if (!customer) {
-        cout << "Customer not found.\n";
+        wxMessageBox("Customer not found.", "Error", wxOK | wxICON_ERROR);
         return;
     }
 
     const int MENU_SIZE = 3;
-    vector<string> menuItems = {"Chicken Biryani", "Paneer Butter Masala", "Gulab Jamun"};
-    vector<int> menuPrices = {150, 120, 50};
+    vector<string> menuItems = { "Chicken Biryani", "Paneer Butter Masala", "Gulab Jamun" };
+    vector<int> menuPrices = { 150, 120, 50 };
 
-    cout << "Menu:\n";
+    wxString menuMessage = "Menu:\n";
     for (int i = 0; i < MENU_SIZE; ++i) {
-        cout << i + 1 << ". " << menuItems[i] << " - Rs." << menuPrices[i] << "\n";
+        menuMessage += wxString::Format("%d. %s - Rs.%d\n", i + 1, menuItems[i], menuPrices[i]);
     }
 
-    cout << "Enter the item number to order: ";
-    int itemNumber;
-    cin >> itemNumber;
+    wxNumberEntryDialog menuDialog(nullptr, menuMessage, "Select Menu Item", "Order Menu", 1, 1, MENU_SIZE);
+    if (menuDialog.ShowModal() != wxID_OK) return;
 
-    if (itemNumber < 1 || itemNumber > MENU_SIZE) {
-        cout << "Invalid item number.\n";
-        return;
-    }
-
+    int itemNumber = menuDialog.GetValue();
     int price = menuPrices[itemNumber - 1];
 
     if (customer->amountPaid < price) {
-        cout << "Insufficient balance. Please add more funds.\n";
-    } else {
+        wxMessageBox("Insufficient balance. Please add more funds.", "Error", wxOK | wxICON_ERROR);
+    }
+    else {
         customer->amountPaid -= price;
-        cout << "Order successful! Rs." << price << " deducted. Remaining balance: Rs." << customer->amountPaid << "\n";
+        wxMessageBox(wxString::Format("Order successful! Rs.%d deducted. Remaining balance: Rs.%d", price, customer->amountPaid),
+            "Success", wxOK | wxICON_INFORMATION);
     }
 }
 
-void signUp() {
-    string username, password;
-    cout << "Enter username: ";
-    cin >> username;
-    cout << "Enter password: ";
-    cin >> password;
+class MessApp : public wxApp {
+public:
+    virtual bool OnInit();
+};
 
-    ofstream userFile("users.txt", ios::app);
-    userFile << username << " " << password << "\n";
-    userFile.close();
-    cout << "User registered successfully!\n";
-}
-
-bool login() {
-    string username, password, fileUsername, filePassword;
-    cout << "Enter username: ";
-    cin >> username;
-    cout << "Enter password: ";
-    cin >> password;
-
-    ifstream userFile("users.txt");
-    while (userFile >> fileUsername >> filePassword) {
-        if (fileUsername == username && filePassword == password) {
-            userFile.close();
-            return true; // Login successful
-        }
-    }
-    userFile.close();
-    cout << "Invalid credentials!\n";
-    return false; // Login failed
-}
-
-int main() {
+class MainFrame : public wxFrame {
     Mess mess;
-    char choice;
 
-    cout << "Mess Management System\n";
-    cout << "1. Sign Up\n2. Login\n";
-    cin >> choice;
+public:
+    MainFrame();
 
-    if (choice == '1') {
-        signUp();
-    } else if (choice == '2') {
-        if (!login()) {
-            return 0; // Exit if login fails
-        }
-    } else {
-        cout << "Invalid choice!\n";
-        return 0;
-    }
+private:
+    void OnAddCustomer(wxCommandEvent&);
+    void OnDisplayCustomers(wxCommandEvent&);
+    void OnDisplayCustomerDetails(wxCommandEvent&);
+    void OnDeleteCustomer(wxCommandEvent&);
+    void OnShowMenu(wxCommandEvent&);
+    void OnExit(wxCommandEvent&);
+};
 
-    while (true) {
-        cout << "\nMess Management System\n";
-        cout << "1. Add New Customer\n";
-        cout << "2. Display Customer Info\n";
-        cout << "3. Delete Customer\n";
-        cout << "4. Show Menu and Deduct Amount\n";
-        cout << "5. Save and Exit\n";
-        cin >> choice;
-        switch (choice) {
-            case '1':
-                mess.insertCustomer();
-                break;
-            case '2':
-                mess.displayCustomers();
-                break;
-            case '3':
-                mess.deleteCustomer();
-                break;
-            case '4':
-                mess.showMenuAndDeductAmount();
-                break;
-            case '5':
-                mess.saveToFile();
-                return 0;
-            default:
-                cout << "Invalid choice!\n";
-                break;
-        }
-    }
-    return 0;
+enum {
+    ID_ADD_CUSTOMER = 1,
+    ID_DISPLAY_CUSTOMERS,
+    ID_DISPLAY_CUSTOMER_DETAILS,
+    ID_DELETE_CUSTOMER,
+    ID_SHOW_MENU,
+    ID_EXIT
+};
+
+bool MessApp::OnInit() {
+    MainFrame* frame = new MainFrame();
+    frame->Show(true);
+    return true;
 }
+
+MainFrame::MainFrame()
+    : wxFrame(nullptr, wxID_ANY, "Mess Management System", wxDefaultPosition, wxSize(600, 400)) {
+    wxMenuBar* menuBar = new wxMenuBar;
+
+    wxMenu* menu = new wxMenu;
+    menu->Append(ID_ADD_CUSTOMER, "Add Customer");
+    menu->Append(ID_DISPLAY_CUSTOMERS, "Display Customers");
+    menu->Append(ID_DISPLAY_CUSTOMER_DETAILS, "Display Customer Details");
+    menu->Append(ID_DELETE_CUSTOMER, "Delete Customer");
+    menu->Append(ID_SHOW_MENU, "Show Menu and Deduct Amount");
+    menu->AppendSeparator();
+    menu->Append(ID_EXIT, "Exit");
+
+    menuBar->Append(menu, "Options");
+    SetMenuBar(menuBar);
+
+    // Add a panel to hold the welcome message
+    wxPanel* panel = new wxPanel(this, wxID_ANY);
+
+    // Create a static text widget for the welcome message
+    wxStaticText* welcomeText = new wxStaticText(panel, wxID_ANY,
+        "Welcome to MMS",
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER_HORIZONTAL | wxST_NO_AUTORESIZE);
+
+    // Set font size and style for the message
+    wxFont font = welcomeText->GetFont();
+    font.SetPointSize(14); // Set font size
+    font.SetWeight(wxFONTWEIGHT_BOLD); // Make it bold
+    welcomeText->SetFont(font);
+
+    // Center the message within the panel using a BoxSizer
+    wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
+    panelSizer->AddStretchSpacer(); // Add space above
+    panelSizer->Add(welcomeText, 0, wxALIGN_CENTER_HORIZONTAL);
+    panelSizer->AddStretchSpacer(); // Add space below
+    panel->SetSizer(panelSizer);
+
+    // Bind events to the menu options
+    Bind(wxEVT_MENU, &MainFrame::OnAddCustomer, this, ID_ADD_CUSTOMER);
+    Bind(wxEVT_MENU, &MainFrame::OnDisplayCustomers, this, ID_DISPLAY_CUSTOMERS);
+    Bind(wxEVT_MENU, &MainFrame::OnDisplayCustomerDetails, this, ID_DISPLAY_CUSTOMER_DETAILS);
+    Bind(wxEVT_MENU, &MainFrame::OnDeleteCustomer, this, ID_DELETE_CUSTOMER);
+    Bind(wxEVT_MENU, &MainFrame::OnShowMenu, this, ID_SHOW_MENU);
+    Bind(wxEVT_MENU, &MainFrame::OnExit, this, ID_EXIT);
+}
+
+void MainFrame::OnAddCustomer(wxCommandEvent&) {
+    mess.insertCustomer();
+}
+
+void MainFrame::OnDisplayCustomers(wxCommandEvent&) {
+    mess.displayCustomers();
+}
+
+void MainFrame::OnDisplayCustomerDetails(wxCommandEvent&) {
+    mess.displayCustomerDetails();
+}
+
+void MainFrame::OnDeleteCustomer(wxCommandEvent&) {
+    mess.deleteCustomer();
+}
+
+void MainFrame::OnShowMenu(wxCommandEvent&) {
+    mess.showMenuAndDeductAmount();
+}
+
+void MainFrame::OnExit(wxCommandEvent&) {
+    Close(true);
+}
+
+wxIMPLEMENT_APP(MessApp);
