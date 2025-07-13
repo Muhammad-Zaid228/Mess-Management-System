@@ -1,4 +1,4 @@
-This is a simple Mess Management System implemented in C++ to manage customer data, meal orders, and payments for a mess. It allows users to sign up, log in, add customers, manage their meal payments, and save data to a file.
+This is a simple Mess Management System implemented in C++ using DSA's approaches to manage customer data, meal orders, and payments for a mess. It allows users to sign up, log in, add customers, manage their meal payments, and save data to a file.
 
 **Features**
 
